@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binance Pay Gateway</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #333; }
+    .fade { transition: opacity 0.6s ease; opacity: 0; }
+    .fade.active { opacity: 1; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center px-4">
+
+  <!-- Navbar -->
+  <nav class="w-full fixed top-0 bg-white shadow-sm z-50">
+    <div class="max-w-6xl mx-auto flex justify-between items-center py-3 px-5">
+      <h1 class="text-2xl font-bold text-yellow-500">BinancePay</h1>
+      <button onclick="navigate('home')" class="text-gray-700 hover:text-yellow-500">Home</button>
+    </div>
+  </nav>
+
+  <!-- Views Container -->
+  <div id="app" class="mt-20 w-full max-w-lg"></div>
+
+  <footer class="mt-10 text-sm text-gray-400 text-center">
+    © 2025 BinancePay Gateway | Built for Transparency & Trust
+  </footer>
+
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init();
+
+    const app = document.getElementById('app');
+
+    // Define views
+    const views = {
+      home: `
+        <div class="fade active" data-aos="fade-up">
+          <div class="p-6 bg-white rounded-2xl shadow-xl">
+            <h2 class="text-xl font-semibold mb-4 text-center">Start Your Transaction</h2>
+            <form id="paymentForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">Amount (USDT)</label>
+                <input type="number" name="amount" required step="0.01" class="w-full border p-2 rounded-md">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Product Name</label>
+                <input type="text" name="product_name" required class="w-full border p-2 rounded-md">
+              </div>
+              <button type="submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-md font-semibold transition">Pay with Binance</button>
+            </form>
+          </div>
+        </div>
+      `,
+      success: `
+        <div class="fade active" data-aos="fade-up">
+          <div class="bg-white p-8 rounded-2xl shadow-lg text-center">
+            <div class="text-green-500 text-5xl mb-4">✅</div>
+            <h2 class="text-2xl font-semibold mb-2">Payment Successful!</h2>
+            <p class="text-gray-500 mb-6">Your transaction has been confirmed.</p>
+            <button onclick="navigate('home')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg">Return Home</button>
+          </div>
+        </div>
+      `,
+      cancel: `
+        <div class="fade active" data-aos="fade-up">
+          <div class="bg-white p-8 rounded-2xl shadow-lg text-center">
+            <div class="text-red-400 text-5xl mb-4">😔</div>
+            <h2 class="text-2xl font-semibold mb-2">Transaction Cancelled</h2>
+            <p class="text-gray-500 mb-6">You have cancelled the payment.</p>
+            <button onclick="navigate('home')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg">Try Again</button>
+          </div>
+        </div>
+      `,
+      error: `
+        <div class="fade active" data-aos="fade-up">
+          <div class="bg-white p-8 rounded-2xl shadow-lg text-center">
+            <div class="text-red-500 text-5xl mb-4">⚠️</div>
+            <h2 class="text-2xl font-semibold mb-2">Transaction Error</h2>
+            <p class="text-gray-500 mb-6">An error occurred while processing your payment.</p>
+            <button onclick="navigate('home')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg">Retry</button>
+          </div>
+        </div>
+      `
+    };
+
+    // Navigation
+    function navigate(view) {
+      app.innerHTML = views[view];
+      AOS.refresh();
+      if (view === 'home') attachPaymentHandler();
+    }
+
+    // Payment form handler
+    function attachPaymentHandler() {
+      document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+          user_id: 123,
+          amount: e.target.amount.value,
+          currency: "USDT",
+          product_name: e.target.product_name.value,
+          returnUrl: window.location.href + "#success",
+          cancelUrl: window.location.href + "#cancel"
+        };
+
+        Swal.fire({ title: 'Processing...', text: 'Creating your Binance order...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+          const res = await fetch('/api/v1/payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const json = await res.json();
+          Swal.close();
+
+          if (json.success && json.data.checkoutUrl) {
+            Swal.fire({
+              icon: 'success',
+              title: 'Order Created',
+              text: 'Click below to proceed with Binance Pay',
+              confirmButtonText: 'Pay Now',
+              showCancelButton: true
+            }).then(result => {
+              if (result.isConfirmed) window.location.href = json.data.checkoutUrl;
+            });
+          } else {
+            navigate('error');
+          }
+        } catch (err) {
+          Swal.close();
+          navigate('error');
+        }
+      });
+    }
+
+    // Initialize app
+    function handleHashRoute() {
+      const hash = window.location.hash.replace('#', '');
+      if (views[hash]) navigate(hash);
+      else navigate('home');
+    }
+
+    window.addEventListener('hashchange', handleHashRoute);
+    handleHashRoute();
+  </script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Success | Affiliate Program</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-green-50">
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center space-x-2">
+          <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+          <h1 class="text-2xl font-bold text-gray-800">Payment Successful!</h1>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-12">
+      <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8 text-center">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <i class="fas fa-check text-green-600 text-3xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Thank You for Your Payment!</h2>
+        <p class="text-gray-600 mb-6">
+          Your transaction has been recorded in our affiliate system.
+        </p>
+
+        <!-- Order Info -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-8 text-left">
+          <p><strong>Order ID:</strong> <span id="orderId"></span></p>
+          <p><strong>Status:</strong> <span class="text-green-600">Completed</span></p>
+          <p class="mt-2 text-sm text-gray-500">
+            This ID is logged and will be shared with your broker for commission verification.
+          </p>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mb-8">
+          <h3 class="font-semibold text-lg mb-3">Next Steps:</h3>
+          <ol class="text-left list-decimal list-inside space-y-2 text-gray-700">
+            <li>Open your Binance app and find this transaction</li>
+            <li>Take a screenshot of the payment confirmation</li>
+            <li>Send it to your broker along with this Order ID</li>
+          </ol>
+        </div>
+
+        <!-- QR Code (if available) -->
+        <div id="qrSection" class="hidden mb-6">
+          <p class="mb-2">Or scan this QR to view payment:</p>
+          <img id="qrImage" src="" alt="Payment QR" class="mx-auto border rounded">
+        </div>
+
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg">
+          <i class="fas fa-print mr-2"></i> Print Receipt
+        </button>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-6">
+      <div class="container mx-auto px-4 text-center">
+        <p>Transparent affiliate tracking. Every payment is logged.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Parse URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+    const qrUrl = urlParams.get('qr');
+
+    document.getElementById('orderId').textContent = orderId || 'N/A';
+
+    if (qrUrl) {
+      document.getElementById('qrImage').src = decodeURIComponent(qrUrl);
+      document.getElementById('qrSection').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

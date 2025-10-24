@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS `transactions` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `order_id` CHAR(36) NOT NULL,
+  `tx_id` VARCHAR(128) NULL,
+  `amount` DECIMAL(18,8),
+  `currency` VARCHAR(10),
+  `status` VARCHAR(50),
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

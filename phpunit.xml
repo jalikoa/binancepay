@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false"
+         cacheResultFile=".phpunit.cache/test-results"
+         executionOrder="depends,defects"
+         failOnWarning="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutTodoAnnotatedTests="true"
+         convertDeprecationsToExceptions="true">
+  
+  <testsuites>
+    <testsuite name="Unit">
+      <directory>tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Feature">
+      <directory>tests/Feature</directory>
+    </testsuite>
+  </testsuites>
+
+  <source>
+    <include>
+      <directory>app</directory>
+    </include>
+  </source>
+
+  <logging>
+    <junit outputFile="build/logs/junit.xml"/>
+    <text outputFile="build/logs/testdox.txt"/>
+  </logging>
+</phpunit>

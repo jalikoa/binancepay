@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Binance Pay — Checkout UI (Demo)</title>
+
+  <!-- Tailwind CDN (for quick prototyping) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Alpine.js for tiny reactivity -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- AOS for animations -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <!-- SweetAlert2 for dialogs -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Feather icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    /* small custom styles */
+    .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(6px); }
+    .card { box-shadow: 0 6px 18px rgba(8,15,52,0.08); }
+    .accent { background: linear-gradient(90deg,#F59E0B,#F97316); }
+  </style>
+</head>
+
+<body class="bg-slate-900 text-slate-100 antialiased" x-data="app()" x-init="init()">
+
+<!-- NAVBAR -->
+<header class="bg-slate-800/60 sticky top-0 z-40 backdrop-blur-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg accent flex items-center justify-center text-slate-900 font-bold">BP</div>
+      <div>
+        <h1 class="text-lg font-semibold">BinancePay</h1>
+        <p class="text-xs text-slate-300">Simple merchant checkout & verification UI</p>
+      </div>
+    </div>
+
+    <nav class="hidden md:flex items-center gap-4 text-sm">
+      <a href="#/" class="hover:text-white">Home</a>
+      <button @click="openDemo()" class="ml-2 px-3 py-1 bg-slate-700 text-sm rounded">Demo flow</button>
+    </nav>
+
+    <div class="md:hidden">
+      <button @click="mobileMenu = !mobileMenu" class="p-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- mobile menu -->
+  <div x-show="mobileMenu" class="md:hidden px-4 pb-4">
+    <a href="#/" class="block py-2">Home</a>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6">
+  <!-- Router views -->
+  <section x-show="route === '/'" x-transition>
+    <!-- Hero -->
+    <div class="grid md:grid-cols-2 gap-8 items-center">
+      <div data-aos="fade-up">
+        <h2 class="text-4xl font-extrabold text-gray-800 dark:text-white">
+        Secure & Seamless Payments via <span class="text-yellow-400">Binance&nbsp;Pay</span>
+        </h2>
+        <p class="mt-4 text-gray-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+        Experience fast, transparent, and reliable crypto transactions.
+        Start your payment below — every order is securely logged for
+        <span class="font-semibold text-yellow-500">affiliate tracking</span> and
+        <span class="font-semibold text-yellow-500">business transparency</span>.
+        </p>
+
+        <div class="mt-6 flex gap-3">
+          <a href="#/pay" @click.prevent="goto('/pay')" class="px-5 py-3 bg-yellow-500 text-slate-900 rounded font-semibold">Create Payment</a>
+        </div>
+
+        <!-- features -->
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-4 card rounded bg-slate-800/40">
+            <h3 class="font-semibold">Secure</h3>
+            <p class="text-sm text-slate-300 mt-1">HMAC-SHA512 signed requests & verified callbacks.</p>
+          </div>
+          <div class="p-4 card rounded bg-slate-800/40">
+            <h3 class="font-semibold">Transparent</h3>
+            <p class="text-sm text-slate-300 mt-1">Order logs & transaction history for audits and commissions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div data-aos="fade-left" class="p-6 card rounded glass">
+        <h4 class="font-semibold">Quick Payment Form</h4>
+        <form @submit.prevent="createOrder" class="mt-4 space-y-3">
+          <div>
+            <label class="text-sm text-slate-300">User ID</label>
+            <input x-model="form.user_id" class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700" placeholder="123" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-300">Amount</label>
+            <input x-model="form.amount" type="number" step="0.01" class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700" placeholder="10.50" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-300">Currency</label>
+            <select x-model="form.currency" class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700">
+              <option>USDT</option>
+              <option>BUSD</option>
+              <option>BTC</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-sm text-slate-300">Product name</label>
+            <input x-model="form.product_name" class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700" placeholder="Premium Plan" />
+          </div>
+          <div class="flex gap-3">
+            <button type="submit" class="px-4 py-2 bg-yellow-500 text-slate-900 rounded">Pay with Binance</button>
+            <button type="button" @click="clearForm" class="px-4 py-2 border rounded">Clear</button>
+          </div>
+
+          <p class="text-xs text-slate-400">When you click pay we will create an order with Binance Pay and return a checkout/QR link. Use that to complete payment in Binance and wait for us to confirm.</p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Testimonials carousel (simple) -->
+    <div class="mt-12" data-aos="fade-up">
+      <h3 class="text-2xl font-bold text-center text-gray-800 mb-8">What Our Users Say</h3>
+
+    <div id="testimonial-carousel" class="relative overflow-hidden w-full max-w-6xl mx-auto">
+        <div id="testimonial-track" class="flex transition-transform duration-700 ease-in-out">
+        <!-- Testimonial cards -->
+        <div class="min-w-full px-6 flex justify-center">
+            <div class="bg-white shadow-xl rounded-2xl p-6 max-w-md text-center">
+            <img src="https://randomuser.me/api/portraits/women/12.jpg" alt="user"
+                class="w-20 h-20 rounded-full mx-auto mb-4 object-cover">
+            <p class="text-gray-700 italic">“Integration was smooth — I got my payments confirmed in seconds.”</p>
+            <div class="flex justify-center items-center mt-3 text-yellow-400">
+                <span>★★★★★</span>
+                <span class="text-gray-500 text-sm ml-2">1.4k</span>
+            </div>
+            <p class="mt-2 font-semibold text-gray-800">ShopKeeper</p>
+            </div>
+        </div>
+
+        <div class="min-w-full px-6 flex justify-center">
+            <div class="bg-white shadow-xl rounded-2xl p-6 max-w-md text-center">
+            <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="user"
+                class="w-20 h-20 rounded-full mx-auto mb-4 object-cover">
+            <p class="text-gray-700 italic">“The transaction logs made affiliate payouts transparent.”</p>
+            <div class="flex justify-center items-center mt-3 text-yellow-400">
+                <span>★★★★☆</span>
+                <span class="text-gray-500 text-sm ml-2">2k</span>
+            </div>
+            <p class="mt-2 font-semibold text-gray-800">BrokerPro</p>
+            </div>
+        </div>
+
+        <div class="min-w-full px-6 flex justify-center">
+            <div class="bg-white shadow-xl rounded-2xl p-6 max-w-md text-center">
+            <img src="https://randomuser.me/api/portraits/women/33.jpg" alt="user"
+                class="w-20 h-20 rounded-full mx-auto mb-4 object-cover">
+            <p class="text-gray-700 italic">“Our customers love paying with Binance — super fast!”</p>
+            <div class="flex justify-center items-center mt-3 text-yellow-400">
+                <span>★★★★★</span>
+                <span class="text-gray-500 text-sm ml-2">345</span>
+            </div>
+            <p class="mt-2 font-semibold text-gray-800">Acme Ltd</p>
+            </div>
+        </div>
+        </div>
+
+        <!-- Navigation buttons -->
+        <button id="prev-btn"
+                class="absolute left-4 top-1/2 -translate-y-1/2 bg-gray-200 hover:bg-gray-300 text-gray-700 p-2 rounded-full shadow-md">
+        ❮
+        </button>
+        <button id="next-btn"
+                class="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-200 hover:bg-gray-300 text-gray-700 p-2 rounded-full shadow-md">
+        ❯
+        </button>
+    </div>
+    </div>
+  </section>
+
+  <!-- PAYMENT VIEW -->
+<section x-show="route === '/pay'" x-transition>
+  <div class="max-w-3xl mx-auto">
+    
+    <!-- Payment Form -->
+    <div data-aos="fade-left" class="p-6 card rounded glass">
+      <h4 class="text-2xl font-bold text-gray-100">Quick Payment Form</h4>
+      <p class="text-sm text-slate-400 mt-1">
+        Securely make your payment via <span class="text-yellow-400 font-semibold">Binance Pay</span>.
+        Fill in the details and click “Pay” to generate your unique checkout link and QR code.
+      </p>
+
+      <form @submit.prevent="createOrder" class="mt-6 space-y-4">
+        <div>
+          <label class="text-sm text-slate-300">User ID</label>
+          <input x-model="form.user_id"
+                 class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700 focus:ring-2 focus:ring-yellow-500 outline-none"
+                 placeholder="123" />
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-300">Amount</label>
+          <input x-model="form.amount"
+                 type="number" step="0.01"
+                 class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700 focus:ring-2 focus:ring-yellow-500 outline-none"
+                 placeholder="10.50" />
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-300">Currency</label>
+          <select x-model="form.currency"
+                  class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700 focus:ring-2 focus:ring-yellow-500 outline-none">
+            <option>USDT</option>
+            <option>BUSD</option>
+            <option>BTC</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-sm text-slate-300">Product Name</label>
+          <input x-model="form.product_name"
+                 class="w-full mt-1 p-3 rounded bg-slate-900 border border-slate-700 focus:ring-2 focus:ring-yellow-500 outline-none"
+                 placeholder="Premium Plan" />
+        </div>
+
+        <div class="flex gap-3">
+          <button type="submit"
+                  class="px-6 py-2 bg-yellow-500 text-slate-900 font-semibold rounded shadow hover:bg-yellow-400 transition">
+            Pay with Binance
+          </button>
+          <button type="button"
+                  @click="clearForm"
+                  class="px-6 py-2 border rounded text-slate-300 hover:bg-slate-800 transition">
+            Clear
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Once you click Pay, we’ll create a Binance Pay order and return your checkout link and QR code.
+          Scan it in your Binance app to complete the payment. The system automatically logs your transaction for transparency.
+        </p>
+      </form>
+    </div>
+
+    <!-- Dynamic QR Display -->
+    <template x-if="order.qr_code_url">
+      <div data-aos="fade-up" class="mt-8 p-6 card rounded glass text-center">
+        <h4 class="text-xl font-bold text-gray-100 mb-4">Scan to Pay</h4>
+        <img :src="order.qr_code_url"
+             alt="QR Code"
+             class="w-64 h-64 object-contain mx-auto rounded shadow-lg border border-slate-700" />
+        <p class="mt-3 text-slate-400 text-sm">Scan this QR code in your Binance App to complete your payment.</p>
+
+        <div class="mt-6">
+          <h5 class="text-sm font-semibold text-yellow-400">Order Reference</h5>
+          <p class="text-xs text-slate-400 mt-1" x-text="order.merchant_trade_no"></p>
+        </div>
+
+        <div class="mt-4">
+          <template x-if="order.status">
+            <div class="inline-block px-4 py-2 rounded text-sm font-semibold"
+                 :class="{
+                   'bg-green-800 text-green-200': order.status === 'COMPLETED',
+                   'bg-yellow-700 text-yellow-200': order.status === 'PENDING',
+                   'bg-red-800 text-red-200': order.status === 'FAILED'
+                 }">
+              Status: <span x-text="order.status"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+</section>
+
+
+  <!-- SUCCESS PAGE -->
+    <section x-show="route === '/success'" x-transition>
+    <div class="max-w-3xl mx-auto card rounded-2xl p-10 glass text-center shadow-2xl border border-green-500/30">
+        
+        <!-- Success Animation -->
+        <div class="flex justify-center mb-6">
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 bg-green-500/20 rounded-full animate-ping"></div>
+            <div class="relative bg-green-500 rounded-full w-20 h-20 flex items-center justify-center text-white text-4xl">
+            <i class="fa fa-check"></i>
+            </div>
+        </div>
+        </div>
+
+        <!-- Headline -->
+        <h2 class="text-3xl font-extrabold text-green-400">Payment Successful!</h2>
+        <p class="mt-3 text-slate-300 text-sm">
+        Thank you for completing your payment. Your transaction has been verified, and your order record has been updated.
+        </p>
+
+        <!-- Order Summary -->
+        <div class="mt-8 grid sm:grid-cols-2 gap-6 text-left bg-slate-900/40 p-6 rounded-xl border border-slate-800">
+        <div>
+            <p class="text-slate-400 text-sm">Order ID</p>
+            <p class="font-semibold text-slate-200 text-sm break-all" x-text="order.order_id || 'ORDER-XXXX'"></p>
+        </div>
+        <div>
+            <p class="text-slate-400 text-sm">Payment Status</p>
+            <p class="font-semibold text-green-400 uppercase" x-text="order.status || 'COMPLETED'"></p>
+        </div>
+        <div>
+            <p class="text-slate-400 text-sm">Amount</p>
+            <p class="font-semibold text-slate-200" x-text="order.amount + ' ' + order.currency"></p>
+        </div>
+        <div>
+            <p class="text-slate-400 text-sm">Date</p>
+            <p class="font-semibold text-slate-200" x-text="new Date().toLocaleString()"></p>
+        </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <button @click="goto('/')" 
+                class="px-5 py-2 rounded-lg border border-slate-600 hover:bg-slate-800 transition">
+            Back to Home
+        </button>
+
+        <button @click="downloadReceipt()" 
+                class="px-5 py-2 rounded-lg bg-yellow-500 text-slate-900 hover:bg-yellow-400 transition">
+            <i class="fa fa-download mr-2"></i> Download Receipt
+        </button>
+
+        <button @click="shareOrder()" 
+                class="px-5 py-2 rounded-lg bg-green-600 text-white hover:bg-green-500 transition">
+            <i class="fa fa-share-alt mr-2"></i> Share Transaction
+        </button>
+        </div>
+
+        <!-- Extra Info -->
+        <div class="mt-10 bg-slate-800/30 p-4 rounded-xl text-sm text-slate-400">
+        <p> Tip: You can always verify your payment manually using your <b>Order ID</b> in the “Verify Payment” section.</p>
+        </div>
+    </div>
+    </section>
+
+    <!-- JS Extras -->
+    <script>
+    function downloadReceipt() {
+    const receiptData = {
+        order_id: app.order?.order_id || 'ORDER-XXXX',
+        amount: app.order?.amount || '0.00',
+        currency: app.order?.currency || 'USDT',
+        status: app.order?.status || 'COMPLETED',
+        date: new Date().toLocaleString()
+    };
+    const blob = new Blob([JSON.stringify(receiptData, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${receiptData.order_id}_receipt.json`;
+    link.click();
+    }
+
+    function shareOrder() {
+    const orderId = app.order?.order_id || 'ORDER-XXXX';
+    const shareData = {
+        title: 'Binance Pay Transaction',
+        text: `Payment Successful! Order ID: ${orderId}`,
+        url: window.location.href
+    };
+    if (navigator.share) {
+        navigator.share(shareData).catch(console.error);
+    } else {
+        alert("Sharing not supported on this device.");
+    }
+    }
+    </script>
+
+
+  <!-- CANCEL PAGE -->
+    <section x-show="route === '/cancel'" x-transition>
+    <div class="max-w-3xl mx-auto card rounded-2xl p-10 glass text-center shadow-2xl border border-amber-500/30">
+        
+        <!-- Cancel Animation -->
+        <div class="flex justify-center mb-6">
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 bg-amber-500/20 rounded-full animate-ping"></div>
+            <div class="relative bg-amber-500 rounded-full w-20 h-20 flex items-center justify-center text-white text-4xl">
+            <i class="fa fa-times"></i>
+            </div>
+        </div>
+        </div>
+
+        <!-- Headline -->
+        <h2 class="text-3xl font-extrabold text-amber-400">Payment Cancelled</h2>
+        <p class="mt-3 text-slate-300 text-sm leading-relaxed">
+        It looks like you cancelled the payment before completion.  
+        No worries — you can create a new order or reach out to support for assistance.
+        </p>
+
+        <!-- Suggested Actions -->
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+        <button @click="goto('/')" 
+                class="px-5 py-2 rounded-lg border border-slate-600 hover:bg-slate-800 transition">
+            <i class="fa fa-redo mr-2"></i> Create New Order
+        </button>
+
+        <button @click="contactSupport()" 
+                class="px-5 py-2 rounded-lg bg-amber-500 text-slate-900 hover:bg-amber-400 transition">
+            <i class="fa fa-headset mr-2"></i> Contact Support
+        </button>
+        </div>
+
+        <!-- Info Box -->
+        <div class="mt-10 bg-slate-800/30 p-4 rounded-xl text-sm text-slate-400">
+        <p> Tip: If this cancellation was unintentional, you can safely retry your transaction — your previous order will remain unchanged.</p>
+        </div>
+    </div>
+    </section>
+
+    <!-- JS Support Function -->
+    <script>
+    function contactSupport() {
+    Swal.fire({
+        icon: 'info',
+        title: 'Contact Support',
+        text: 'For payment help, please reach out to support@jalsoft.com',
+        confirmButtonColor: '#fbbf24'
+    });
+    }
+    </script>
+
+    <!-- ERROR PAGE -->
+    <section x-show="route === '/error'" x-transition>
+    <div class="card rounded p-8 text-center glass max-w-2xl mx-auto" data-aos="zoom-in" data-aos-duration="700">
+        <div class="flex flex-col items-center justify-center space-y-4">
+        <!-- Icon -->
+        <div class="bg-red-900/40 p-4 rounded-full w-20 h-20 flex items-center justify-center">
+            <i data-feather="alert-triangle" class="text-red-400 w-10 h-10"></i>
+        </div>
+
+        <!-- Title -->
+        <h2 class="text-2xl font-bold text-red-400">Payment Error</h2>
+
+        <!-- Message -->
+        <p class="text-slate-300 max-w-md mx-auto">
+            Oops! Something went wrong while processing your payment. This may happen due to an expired session,
+            network issue, or invalid order data. Please try again or contact our support team for assistance.
+        </p>
+
+        <!-- Action Buttons -->
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+            <button @click="goto('/')" class="px-5 py-2 rounded border border-slate-600 hover:bg-slate-800 transition">
+            Back to Home
+            </button>
+            <button @click="retryPayment()" class="px-5 py-2 rounded bg-yellow-500 text-slate-900 hover:bg-yellow-400 transition">
+            Retry Payment
+            </button>
+            <button @click="contactSupport()" class="px-5 py-2 rounded bg-slate-700 hover:bg-slate-600 transition">
+            Contact Support
+            </button>
+        </div>
+
+        <!-- Optional Error Details -->
+        <div x-data="{ showDetails: false }" class="mt-8 text-left w-full">
+            <button @click="showDetails = !showDetails"
+                    class="flex items-center gap-2 text-xs text-slate-400 hover:text-yellow-400 transition">
+            <i data-feather="info"></i>
+            <span x-text="showDetails ? 'Hide Error Details' : 'Show Error Details'"></span>
+            </button>
+
+            <div x-show="showDetails" x-transition class="mt-3 bg-slate-900/70 border border-slate-800 rounded p-3 text-xs text-slate-400 overflow-auto">
+            <pre class="whitespace-pre-wrap">{{ JSON.stringify(orderError || { message: 'No debug info available' }, null, 2) }}</pre>
+            </div>
+        </div>
+
+        <!-- Helpful Tips -->
+        <div class="mt-6 text-sm text-slate-400 max-w-md mx-auto">
+            <ul class="list-disc text-left space-y-1 pl-5">
+            <li>Ensure your Binance Pay app is connected and updated.</li>
+            <li>Confirm your internet connection is stable.</li>
+            <li>If using a test order, check if sandbox mode is enabled.</li>
+            </ul>
+        </div>
+        </div>
+    </div>
+    </section>
+
+    <script>
+    function retryPayment() {
+        Swal.fire({
+        icon: 'info',
+        title: 'Retry Payment',
+        text: 'We’re reinitializing your last order session. Please wait...',
+        showConfirmButton: false,
+        timer: 2000,
+        background: '#0f172a',
+        color: '#fff',
+        });
+        // Optional: Logic to re-fetch last order or redirect
+        setTimeout(() => window.location.hash = '/pay', 2000);
+    }
+
+    function contactSupport() {
+        Swal.fire({
+        icon: 'question',
+        title: 'Contact Support',
+        html: 'You can reach us at <a href="mailto:support@jalsoft.co.ke" class="text-yellow-400">support@jalsoft.co.ke</a>',
+        confirmButtonText: 'Okay',
+        confirmButtonColor: '#facc15',
+        background: '#0f172a',
+        color: '#fff'
+        });
+    }
+    </script>
+
+
+</main>
+
+
+
+<!-- Footer -->
+<footer class="mt-16 bg-slate-900/80 border-t border-slate-800 text-slate-400 backdrop-blur-lg">
+  <div class="max-w-7xl mx-auto px-6 py-10 grid md:grid-cols-4 gap-8">
+    
+    <!-- Brand -->
+    <div>
+      <h3 class="text-xl font-bold text-white mb-3">JalSoft</h3>
+      <p class="text-sm leading-relaxed">
+        Empowering businesses and affiliates with secure and transparent crypto payment solutions using Binance Pay integration.
+      </p>
+      <div class="flex space-x-4 mt-4">
+        <a href="#" class="hover:text-yellow-400 transition"><i data-feather="facebook"></i></a>
+        <a href="#" class="hover:text-yellow-400 transition"><i data-feather="twitter"></i></a>
+        <a href="#" class="hover:text-yellow-400 transition"><i data-feather="linkedin"></i></a>
+        <a href="#" class="hover:text-yellow-400 transition"><i data-feather="github"></i></a>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div>
+      <h4 class="font-semibold text-white mb-3">Quick Links</h4>
+      <ul class="space-y-2 text-sm">
+        <li><a href="#/" class="hover:text-yellow-400 transition">Home</a></li>
+        <li><a href="#/success" class="hover:text-yellow-400 transition">Payment Success</a></li>
+        <li><a href="#/cancel" class="hover:text-yellow-400 transition">Payment Cancel</a></li>
+        <li><a href="#/error" class="hover:text-yellow-400 transition">Error Page</a></li>
+      </ul>
+    </div>
+
+    <!-- Support -->
+    <div>
+      <h4 class="font-semibold text-white mb-3">Support</h4>
+      <ul class="space-y-2 text-sm">
+        <li><a href="#" class="hover:text-yellow-400 transition">Help Center</a></li>
+        <li><a href="#" class="hover:text-yellow-400 transition">Developer Docs</a></li>
+        <li><a href="#" class="hover:text-yellow-400 transition">Report an Issue</a></li>
+        <li><a href="#" class="hover:text-yellow-400 transition">Affiliates Program</a></li>
+      </ul>
+    </div>
+
+    <!-- Newsletter -->
+    <div>
+      <h4 class="font-semibold text-white mb-3">Stay Updated</h4>
+      <p class="text-sm mb-3">Get updates about our new releases, affiliate tools, and integrations.</p>
+      <form class="flex items-center">
+        <input type="email" placeholder="Your email" class="w-full px-3 py-2 rounded-l-md bg-slate-800 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-yellow-400 text-white placeholder-slate-500">
+        <button type="submit" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-semibold px-4 py-2 rounded-r-md transition">Subscribe</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bottom Line -->
+  <div class="border-t border-slate-800 mt-8 py-4 text-center text-xs sm:text-sm flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-2 px-4">
+    <div>© <span id="year"></span> JalSoft — Powered by Binance Pay</div>
+    <div class="flex items-center gap-2">
+      <span>Made with by</span>
+      <span class="font-semibold text-white">Bill Clinton</span>
+      <span>and</span>
+      <span class="font-semibold text-white">Calvince Owino</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // JS for dynamic year and form
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  // Optional: SweetAlert2 for newsletter subscription (demo)
+  document.querySelector("footer form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    Swal.fire({
+      icon: 'success',
+      title: 'Subscribed!',
+      text: 'You have successfully joined our newsletter.',
+      confirmButtonColor: '#facc15',
+      background: '#0f172a',
+      color: '#fff',
+    });
+    this.reset();
+  });
+</script>
+
+
+<!-- Scripts -->
+<script>
+    const track = document.getElementById('testimonial-track');
+    const slides = track.children.length;
+    let index = 0;
+
+    function updateSlide() {
+        track.style.transform = `translateX(-${index * 100}%)`;
+    }
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+        index = (index + 1) % slides;
+        updateSlide();
+    });
+
+    document.getElementById('prev-btn').addEventListener('click', () => {
+        index = (index - 1 + slides) % slides;
+        updateSlide();
+    });
+
+    // auto-slide every 6 seconds
+    setInterval(() => {
+        index = (index + 1) % slides;
+        updateSlide();
+    }, 6000);
+  function app(){
+    return {
+      route: window.location.hash.replace('#','') || '/',
+      mobileMenu: false,
+      form: { user_id: 1, amount: 10.50, currency: 'USDT', product_name: 'Premium Plan', returnUrl: window.location.origin + '/#/success', cancelUrl: window.location.origin + '/#/cancel' },
+      order: {},
+      manual: { merchant_trade_no: '', result: null },
+      admin: { query: '', rows: [] },
+
+      init() {
+        AOS.init({
+            duration: 800,
+            once: true,
+        });
+        feather.replace();
+
+        // Set route on page load
+        this.route = window.location.hash.replace('#', '') || '/';
+
+        // Reapply animations when the route changes
+        window.addEventListener('hashchange', () => {
+            this.route = window.location.hash.replace('#', '') || '/';
+            setTimeout(() => AOS.refresh(), 300);
+        });
+
+        // Refresh animations after initial load
+        setTimeout(() => AOS.refresh(), 300);
+        },
+
+
+      goto(path) {
+        window.location.hash = path;
+        this.route = path;
+        setTimeout(() => AOS.refresh(), 300);
+        },
+      openDemo(){ this.goto('/pay'); },
+
+      clearForm(){ this.form = { user_id: '', amount: '', currency: 'USDT', product_name: '' }; },
+
+      async createOrder(){
+        try{
+          Swal.fire({title:'Creating order…', didOpen: ()=>{Swal.showLoading()}})
+          const res = await fetch('/api/v1/payments',{
+            method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(this.form)
+          });
+          const data = await res.json();
+          Swal.close();
+          if(!data.success){
+            Swal.fire('Error', data.error || JSON.stringify(data), 'error');
+            return;
+          }
+
+          this.order = {
+            order_id: data.data.order_id || data.data.orderId || data.order_id,
+            merchant_trade_no: data.data.merchant_trade_no || data.data.merchantTradeNo || data.data.merchant_trade_no,
+            checkout_url: data.data.checkout_url || data.data.checkoutUrl || data.data.qr_url || data.data.qrCodeUrl,
+            qr_code_url: data.data.qr_code_url || data.data.qrCodeUrl || data.data.qr_url || data.data.qrCode
+          };
+
+          Swal.fire('Order created','Order ID: ' + this.order.order_id,'success');
+          this.goto('/pay');
+        }catch(err){
+          Swal.close();
+          console.error(err);
+          Swal.fire('Network error', err.message || String(err), 'error');
+        }
+      },
+
+      copyCheckout(){ navigator.clipboard.writeText(this.order.checkout_url).then(()=>Swal.fire('Copied','Checkout link copied to clipboard','success')) },
+      openCheckout(){ if(this.order.checkout_url) window.open(this.order.checkout_url,'_blank') },
+
+      async checkStatus(){
+        if(!this.order.order_id){ Swal.fire('No order','Create an order first','warning'); return; }
+        try{
+          Swal.fire({title:'Checking status…', didOpen: ()=>{Swal.showLoading()}})
+          const res = await fetch('/api/v1/payments/' + this.order.order_id);
+          const data = await res.json();
+          Swal.close();
+          if(data.error){ Swal.fire('Error', data.error, 'error'); return; }
+          // map fields
+          this.order.status = data.status || data.data?.status || data.order?.status || 'UNKNOWN';
+          Swal.fire('Status', 'Order status: ' + this.order.status, 'info');
+        }catch(e){ Swal.close(); Swal.fire('Error', e.message || String(e), 'error') }
+      },
+
+      async refreshLogs(){
+        try{
+          Swal.fire({title:'Loading…', didOpen: ()=>{Swal.showLoading()}})
+          const res = await fetch('/api/v1/admin/logs');
+          const data = await res.json();
+          Swal.close();
+          this.admin.rows = data;
+        }catch(e){ Swal.close(); Swal.fire('Error','Implement /api/v1/admin/logs on server to fetch logs','error') }
+      },
+
+      contactSupport(){ Swal.fire('Contact','Please contact support@yourcompany.com','info') },
+      downloadReceipt(){
+        const payload = { order: this.order, date: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'receipt-' + (this.order.order_id||'order') + '.json'; a.click(); URL.revokeObjectURL(url);
+      }
+    }
+  }
+</script>
+</body>
+</html>
